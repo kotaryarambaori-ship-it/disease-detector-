@@ -1,0 +1,113 @@
+import React, { useState } from "react";
+import "./style.css";
+
+export default function App() {
+  const [symptoms, setSymptoms] = useState([]);
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const symptomList = [
+    "Fever",
+    "Headache",
+    "Cough",
+    "Fatigue",
+    "Sore throat",
+    "Body pain"
+  ];
+
+  function toggleSymptom(symptom) {
+    setSymptoms((old) =>
+      old.includes(symptom)
+        ? old.filter((s) => s !== symptom)
+        : [...old, symptom]
+    );
+  }
+
+  async function checkSymptoms() {
+    if (!symptoms.length) {
+      setResult("Please select your symptoms first.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/check`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ symptoms })
+        }
+      );
+
+      const data = await response.json();
+      setResult(data.message || "No result available.");
+    } catch {
+      setResult("Server connect nahi hua. Backend online karein.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="app">
+      <header>
+        <div className="logo">✚</div>
+        <div>
+          <h1>Disease Detector</h1>
+          <p>Your Personal Health Assistant</p>
+        </div>
+      </header>
+
+      <section className="scan-card">
+        <div className="fingerprint">◎</div>
+        <h2>Touch to Scan</h2>
+        <p>Choose your symptoms for a health assessment.</p>
+        <button onClick={checkSymptoms} disabled={loading}>
+          {loading ? "Checking..." : "Start Health Scan"}
+        </button>
+      </section>
+
+      <section className="symptoms">
+        <h2>Select Your Symptoms</h2>
+
+        <div className="symptom-grid">
+          {symptomList.map((symptom) => (
+            <button
+              key={symptom}
+              className={
+                symptoms.includes(symptom) ? "symptom selected" : "symptom"
+              }
+              onClick={() => toggleSymptom(symptom)}
+            >
+              {symptoms.includes(symptom) ? "✓ " : "+ "}
+              {symptom}
+            </button>
+          ))}
+        </div>
+
+        <button className="check-button" onClick={checkSymptoms}>
+          Check Symptoms
+        </button>
+      </section>
+
+      {result && (
+        <section className="result">
+          <h2>Health Assessment</h2>
+          <p>{result}</p>
+          <p>
+            This is general health information, not a medical diagnosis.
+            Consult a healthcare professional for medical advice.
+          </p>
+        </section>
+      )}
+
+      <footer>
+        <span>Home</span>
+        <span>History</span>
+        <span>Profile</span>
+      </footer>
+    </main>
+  );
+}
